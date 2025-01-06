@@ -101,3 +101,17 @@ app.Get("https://example.com/image.png").Do().Body().Path("/user/files").SaveFil
 //OR 
 app.Get("https://example.com/image.png").Do().Body().ToFile("path/savedimage.png")
 ```
+Sending form with files and text fields
+```go
+req := app.Post("https://example.site/form/")
+	req.Header().Set("Client", "number_1")
+	form := req.FormData().WithMultipart()
+	form.AddField("first_name", "John")
+	form.AddField("last_name", "Doe")
+	form.AddFile("photo", "my_photo.png")
+	form.AddFile("documents", "example.txt")
+	form.AddFile("documents", "example2.txt")
+	form.Push()
+	req.Do()
+	.....
+```
