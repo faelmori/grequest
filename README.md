@@ -60,3 +60,9 @@ Library also contains ready-made methods for working with json, request body, co
 - Token Authentication
 
 ## Examples
+Simple get request anf get string response
+```go
+req := app.Get("https://jsonplaceholder.typicode.com/todos/1").Do()
+	response := req.Body().GetStrings()
+	fmt.Println(response)
+```
