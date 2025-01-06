@@ -12,14 +12,14 @@ Library also contains ready-made methods for working with json, request body, co
 - No third party dependencies
 - Directly uses net/http
 - Lightweight library
-- ensures safe handling and completion of HTTP responses.
+- Ensures safe handling and completion of HTTP responses.
 - Limit for executing a request with context.WithTimeoutis already set
 
 **Body and request**:
   - Set the request body 
   - Easily configure JSON payloads in the request body.
   - Retrieve server response status codes as integers or strings.
-  - supports GET, POST, PUT, DELETE, and other methods.
+  - Supports GET, POST, PUT, DELETE, and other methods.
   - Ability to install advanced methods
 
 **JSON handling**:
