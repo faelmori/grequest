@@ -3,7 +3,7 @@
 
 
 
-Simple and lightweight golang library for http requests. based on powerful net/http
+Simple and lightweight golang package for http requests. based on powerful net/http
 
 Grequest is inspired by the Request library for Python and Guzzle in PHP, the goal is to make a simple and convenient library for making http requests in go
 
@@ -23,7 +23,7 @@ Library also contains ready-made methods for working with json, request body, co
   - Set the request body 
   - Easily configure JSON payloads in the request body.
   - Retrieve server response status codes as integers or strings.
-  - Supports GET, POST, PUT, DELETE, and other methods.
+  - Supports GET, POST, PUT, DELETE and other methods.
   - Ability to install advanced methods
 
 **📄 JSON handling**:
