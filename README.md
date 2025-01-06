@@ -5,7 +5,7 @@ grequest is inspired by the request library for python and Guzzle in php, the go
 
 The library has a flexible API with methods that return a pointer to the library structure, which allows you to declaratively describe a request using a chain of methods.
 
-Library also contains ready-made methods for working with json, request body, cookies and working with files over the network and  to the **lightweight nature of the library and the absence of third-party dependencies**, you can easily connect it to your projects
+Library also contains ready-made methods for working with json, request body, cookies and working with files over the network and  to the **lightweight nature of the library and the absence of third-party dependencies**, you can easily connect it to your projects.
 ## Features 
 
 **Simple HTTP client**
