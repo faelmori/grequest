@@ -134,3 +134,16 @@ req := app.Post("https://example.site/secret)
 	req.Auth().SetBearer("myToken")
 	req.Do()
 ```
+Work with cookie
+```go
+//Save cookie to file 
+//By default this saved in  cookies/example.site/cookies.json
+req := app.Post("https://example.site/cookies")
+	req.Cookie().Save()
+	...
+	// Load saved cookies form cookies/example.site/cookies.json
+	reqWithCookie := app.Post("https://example.site/cookies")
+	reqWithCookie.Cookie().Load()
+	reqWithCookie.Do()
+	...
+```
