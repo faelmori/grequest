@@ -99,5 +99,5 @@ app.Get("https://example.com/image.png").Do().Body().SaveFile()
 //OR
 app.Get("https://example.com/image.png").Do().Body().Path("/user/files").SaveFile()
 //OR 
-app.Get("https://example.com/image.png").Do().Body().ToFile("path/image.png")
+app.Get("https://example.com/image.png").Do().Body().ToFile("path/savedimage.png")
 ```
