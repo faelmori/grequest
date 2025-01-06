@@ -59,7 +59,7 @@ Library also contains ready-made methods for working with json, request body, co
 - Bearer Authentication 
 - Token Authentication
 
-##Installation
+## Installation
 ```
 go get github.com/lib4u/grequest
 ```
