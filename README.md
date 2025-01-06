@@ -92,3 +92,12 @@ data := LoginRequest{
 	req := app.Post("https://example.site/login").Body().SetJson(data).Do()
 	fmt.Println(req.Status().GetCode())
 ```
+Simple save file from response
+```go
+// file will saved as ../files/image.png
+app.Get("https://example.com/image.png").Do().Body().SaveFile()
+//OR
+app.Get("https://example.com/image.png").Do().Body().Path("/user/files").SaveFile()
+//OR 
+app.Get("https://example.com/image.png").Do().Body().ToFile("path/image.png")
+```
