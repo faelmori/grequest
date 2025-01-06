@@ -101,7 +101,7 @@ app.Get("https://example.com/image.png").Do().Body().Path("/user/files").SaveFil
 //OR 
 app.Get("https://example.com/image.png").Do().Body().ToFile("path/savedimage.png")
 ```
-Sending form with files and text fields
+Sending form with files and text fields and set header
 ```go
 req := app.Post("https://example.site/form/")
 	req.Header().Set("Client", "number_1")
