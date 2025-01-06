@@ -59,6 +59,11 @@ Library also contains ready-made methods for working with json, request body, co
 - Bearer Authentication 
 - Token Authentication
 
+##Installation
+```
+go get github.com/lib4u/grequest
+```
+
 ## Examples
 Simple get request anf get string response
 ```go
