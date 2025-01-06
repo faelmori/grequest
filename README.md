@@ -1,7 +1,7 @@
 # Grequests 
 
 Simple and lightweight golang library for http requests. based on powerful net/http
-grequest is inspired by the request library for python and Guzzle in php, the goal is to make a simple and convenient library for making http requests in go
+grequest is inspired by the Request library for Python and Guzzle in PHP, the goal is to make a simple and convenient library for making http requests in go
 
 The library has a flexible API with methods that return a pointer to the library structure, which allows you to declaratively describe a request using a chain of methods.
 
