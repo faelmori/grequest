@@ -64,7 +64,7 @@ Library also contains ready-made methods for working with json, request body, co
 go get github.com/lib4u/grequest
 ```
 
-## Examples
+## Usage
 Simple get request anf get string response
 ```go
 req := app.Get("https://jsonplaceholder.typicode.com/todos/1").Do()
@@ -119,4 +119,18 @@ req := app.Post("https://example.site/form/")
 	form.Push()
 	req.Do()
 	.....
+```
+Request with authentication
+```go
+//With basic auth
+req := app.Post("https://example.site/secret)
+	req.Header().Set("Client", "number_1")
+	req.Auth().SetBasic("user", "password")
+	req.Do()
+	...
+	//Sets bearer token
+	req := app.Post("https://example.site/secret)
+	req.Header().Set("Client", "number_1")
+	req.Auth().SetBearer("myToken")
+	req.Do()
 ```
