@@ -103,8 +103,30 @@ app.Post("https://example.site/secret").Auth().SetBasic("user", "password").Do()
 
 // Bearer Token Authentication
 app.Post("https://example.site/secret").Auth().SetBearer("myToken").Do()
+
+// Custom Token Authentication
+app.Post("https://example.site/secret").Auth().SetToken("Token", "myToken").Do()
+
+// Custom Header Authentication
+app.Post("https://example.site/secret").Auth().SetHeader("JSESSIONID", "12345").Do()
 ```
 
+### **Cookie Handling**
+
+```go
+//Save cookie to file 
+//By default this saved in  cookies/example.site/cookies.json
+req := app.Post("https://example.site/cookies")
+req.Cookie().Save()
+
+// Load saved cookies form cookies/example.site/cookies.json
+reqWithCookie := app.Post("https://example.site/cookies")
+reqWithCookie.Cookie().Load()
+reqWithCookie.Do()
+
+// Clear cookies
+reqWithCookie.Cookie().Clear()
+```
 ---
 
 ## **Contributing**
