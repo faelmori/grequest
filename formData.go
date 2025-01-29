@@ -88,6 +88,7 @@ func (c *FormData) AddFile(key, path string) *FormData {
 	return c
 }
 
+// Push form fields
 func (c *FormData) Push() *HTTPClient {
 	c.writer.Close()
 	if !c.isMultipartForm {
