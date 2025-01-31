@@ -95,6 +95,22 @@ form.Push()
 req.Do()
 ```
 
+### **Set count of maximum redirects and retry request if get 404 or 500 HTTP code**
+
+```go
+req := app.Get("https://jsonplaceholder.typicode.com/todos/1").MaxRedirect(1).RetryIf(404, 500).Do()
+fmt.Println(req.Body().GetStrings())
+```
+
+### **Set your context**
+
+```go
+ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+defer cancel()
+req := app.Get("https://jsonplaceholder.typicode.com/todos/1").DoWithContext(ctx)
+fmt.Println(req.Body().GetStrings())
+```
+
 ### **Authenticated Requests**
 
 ```go
