@@ -9,24 +9,26 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"slices"
 	"sync"
 	"time"
 )
 
 type HTTPClient struct {
-	cacheEnabled    bool
-	errors          []error
-	maxRedirect     int
-	redirectEnabled bool
-	Timeout         time.Duration
-	userAgent       string
-	client          *http.Client
-	transport       *http.Transport
-	cjar            *cookiejar.Jar
-	request         *Request
-	res             *http.Response
-	BodyBytes       []byte
-	errs            []error
+	cacheEnabled bool
+	errors       []error
+	maxRedirect  int
+	retryCodes   []int
+	maxRetries   int
+	Timeout      time.Duration
+	userAgent    string
+	client       *http.Client
+	transport    *http.Transport
+	cjar         *cookiejar.Jar
+	request      *Request
+	res          *http.Response
+	BodyBytes    []byte
+	errs         []error
 }
 
 type Request struct {
@@ -41,26 +43,24 @@ type Request struct {
 	Cookie         []*http.Cookie
 }
 
+const (
+	maxRetriesDefault  = 1
+	maxRedirectDefault = 5
+	userAgentField     = "User-Agent"
+	userAgentName      = "grequest"
+)
+
 var (
 	client         *HTTPClient
 	once           sync.Once
-	userAgent      = "grequest"
 	timeoutDefault = 30 * time.Second
 	// Errors
 	ErrInvalidHost             = errors.New("Invalid Host Request")
 	ErrInvalidURL              = errors.New("Invalid URL")
 	ErrInvalidRedirectLocation = errors.New("Invalid Redirect Location")
 	ErrTooManyRedirection      = errors.New("Too many Redirect")
+	ErrTooManyRetry            = errors.New("Too many Retry")
 )
-
-func GetHTTPClient() *HTTPClient {
-	once.Do(func() {
-		client = New()
-	})
-	client.request = new(Request)
-	client.maxRedirect = 0
-	return client
-}
 
 func New() *HTTPClient {
 	jar, err := cookiejar.New(&cookiejar.Options{})
@@ -77,6 +77,9 @@ func New() *HTTPClient {
 		client: &http.Client{
 			Jar:       jar,
 			Transport: transport,
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 		transport: transport,
 		cjar:      jar,
@@ -86,14 +89,14 @@ func New() *HTTPClient {
 			isRequested:    false,
 			header:         make(http.Header),
 		},
-		maxRedirect:  0,
+		maxRedirect:  maxRedirectDefault,
 		cacheEnabled: false,
 	}
 
 	if err != nil {
 		client.errs[0] = err
 	}
-	client.request.header["User-Agent"] = []string{userAgent}
+	client.request.header[userAgentField] = []string{userAgentName}
 	return client
 }
 
@@ -109,25 +112,20 @@ func (c *HTTPClient) Request() {
 }
 
 func (c *HTTPClient) SetUserAgent(agent string) *HTTPClient {
-	c.request.header.Set("User-Agent", agent)
+	c.request.header.Set(userAgentField, agent)
 	return c
 }
 
-func (c *HTTPClient) EnableRedirct() *HTTPClient {
-	c.maxRedirect = 2
-	c.redirectEnabled = true
+// Set max redirect count
+// 0 = disable redirects
+func (c *HTTPClient) MaxRedirect(maxRedirect int) *HTTPClient {
+	c.maxRedirect = maxRedirect
 	return c
 }
 
 func (c *HTTPClient) SetRequest(req *http.Request) *HTTPClient {
 	c.request.req = req
 	c.request.isRequestReady = true
-	return c
-}
-
-func (c *HTTPClient) SetRedirectCount(count int) *HTTPClient {
-	c.maxRedirect = count
-	c.redirectEnabled = true
 	return c
 }
 
@@ -179,12 +177,16 @@ func (c *HTTPClient) SetTimeoutSecons(second time.Duration) *HTTPClient {
 	return c
 }
 
-func (c *HTTPClient) WithRetry(maxRetries int, code int) *HTTPClient {
-	for i := 0; i <= maxRetries; i++ {
-		if c.Status().GetCode() == code {
-			return c.Do()
-		}
-	}
+// Sets the conditions for retrying a http request
+func (c *HTTPClient) RetryIf(statusCodes ...int) *HTTPClient {
+	c.retryCodes = statusCodes
+	c.maxRetries = maxRetriesDefault
+	return c
+}
+
+// Sets the counts for retrying a http request
+func (c *HTTPClient) RetryMax(maxRetries int) *HTTPClient {
+	c.maxRetries = maxRetries
 	return c
 }
 
@@ -199,6 +201,10 @@ func (c *HTTPClient) Do() *HTTPClient {
 	return c.newRequest(ctx).do()
 }
 
+func (c *HTTPClient) DoWithContext(ctx context.Context) *HTTPClient {
+	return c.newRequest(ctx).do()
+}
+
 func (c *HTTPClient) do() *HTTPClient {
 
 	var res *http.Response
@@ -208,11 +214,17 @@ func (c *HTTPClient) do() *HTTPClient {
 		c.errs = append(c.errs, err)
 		return c
 	}
-	//close main body reader
 	defer c.Close()
 	status := res.StatusCode
+	if c.maxRetries > 0 && slices.Contains(c.retryCodes, status) {
+		res, err = c.retryRequest(c.request.req, res, 0)
+		if err != nil {
+			c.res = res
+			c.errs = append(c.errs, err)
+		}
+	}
 
-	if c.redirectEnabled && c.maxRedirect > 0 && status != 300 && status/100 == 3 {
+	if c.maxRedirect > 0 && status != 300 && status/100 == 3 {
 		res, err = c.redirectRequest(c.request.req, res, 0)
 		if err != nil {
 			c.res = res
@@ -230,9 +242,7 @@ func (c *HTTPClient) do() *HTTPClient {
 		}
 		res.Body = gres
 	}
-	//get bytes
 	bodyBytes, _ := io.ReadAll(res.Body)
-	//copy bytes in BodyBytes for reusability
 	c.BodyBytes = bodyBytes
 	c.res = res
 	c.request.isRequested = true
@@ -240,32 +250,49 @@ func (c *HTTPClient) do() *HTTPClient {
 	return c
 }
 
-func (c *HTTPClient) redirectRequest(req *http.Request, res *http.Response, count int) (rres *http.Response, err error) {
+func (c *HTTPClient) retryRequest(req *http.Request, res *http.Response, count int) (*http.Response, error) {
+	if count <= c.maxRetries {
+		retryRes, err := c.client.Transport.RoundTrip(req)
+		if err != nil {
+			c.res = retryRes
+			c.errs = append(c.errs, err)
+		}
+		if slices.Contains(c.retryCodes, res.StatusCode) {
+			return c.retryRequest(req, retryRes, count+1)
+		}
+		return retryRes, nil
+	}
+	return res, ErrTooManyRetry
+}
+
+func (c *HTTPClient) redirectRequest(req *http.Request, res *http.Response, count int) (redirectRes *http.Response, err error) {
 
 	if count > c.maxRedirect {
 		return res, ErrTooManyRedirection
 	}
-
-	rreq := req
-
+	redirectReq := req
 	loc := res.Header.Get("Location")
-
 	if len(loc) == 0 {
 		return res, ErrInvalidRedirectLocation
 	}
+	var redirectToUrl *url.URL
+	urlLoc, err := checkURL(loc)
+	redirectToUrl = urlLoc
+	if err != nil {
+		toLoc, _ := url.ParseRequestURI(req.URL.String() + loc)
+		redirectToUrl = toLoc
+	}
 
-	rreq.URL, err = url.ParseRequestURI(loc)
+	redirectReq.URL = redirectToUrl
+	redirectRes, err = c.client.Transport.RoundTrip(redirectReq)
 	if err == nil {
-		rres, err = c.client.Transport.RoundTrip(rreq)
-		if err == nil {
-			switch rres.StatusCode / 100 {
-			case 2:
-				return rres, nil
-			case 3:
-				return c.redirectRequest(rreq, rres, count+1)
-			case 4, 5:
-				return rres, errors.New(http.StatusText(rres.StatusCode))
-			}
+		switch redirectRes.StatusCode / 100 {
+		case 2:
+			return redirectRes, nil
+		case 3:
+			return c.redirectRequest(redirectReq, redirectRes, count+1)
+		case 4, 5:
+			return redirectRes, errors.New(http.StatusText(redirectRes.StatusCode))
 		}
 	}
 	return res, err
